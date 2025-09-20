@@ -21,10 +21,12 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 10 # 这里写你本地用的版本
+          version: 10
 
       - name: Install dependencies
+        working-directory: week1-cli
         run: pnpm install
 
       - name: Run tests
+        working-directory: week1-cli
         run: pnpm test
