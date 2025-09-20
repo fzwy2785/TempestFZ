@@ -1,19 +1,7 @@
 #!/usr/bin/env node
+import { runReport } from "./report.js";
 import fs from "fs";
-
-const DATA_FILE = "./data.json";
-
-// 读取数据
-function loadData() {
-  if (!fs.existsSync(DATA_FILE)) return [];
-  const raw = fs.readFileSync(DATA_FILE, "utf-8");
-  return JSON.parse(raw);
-}
-
-// 保存数据
-function saveData(records) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(records, null, 2));
-}
+import { loadData, saveData } from "./storage.js";
 
 const [,, cmd, ...args] = process.argv;
 
@@ -56,6 +44,7 @@ function main() {
       saveData(records);
       console.log("🗑 已删除:", removed[0].category, removed[0].amount);
     }
+
   } else if (cmd === "export") {
     const format = args[0] || "csv";
     if (records.length === 0) {
@@ -74,6 +63,7 @@ function main() {
     } else {
       console.log("❌ 目前只支持 csv 格式");
     }
+
   } else if (cmd === "import") {
     const format = args[0] || "csv";
     if (format !== "csv") {
@@ -98,52 +88,18 @@ function main() {
       };
     });
 
-    let records = loadData();
     records = records.concat(newRecords);
     saveData(records);
 
     console.log(`✅ 已导入 ${newRecords.length} 条记录`);
 
-  } else if (cmd === "report") {
-    if (records.length === 0) {
-      console.log("没有记录 🎉");
-    } else {
-      const mode = args[0] || "all"; // 默认 all，可选 today / month
-      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-      const month = today.slice(0, 7); // YYYY-MM
+   } else if (cmd === "report") {
+    const mode = args[0] || "all";
+    runReport(records, mode);
 
-       // 过滤数据
-      let filtered = records;
-      if (mode === "today") {
-        filtered = records.filter(r => r.date === today);
-      } else if (mode === "month") {
-        filtered = records.filter(r => r.date.startsWith(month));
-      }
-
-      if (filtered.length === 0) {
-        console.log(`没有符合条件的记录 (${mode}) 🎉`);
-        return;
-      }
-
-      // 分类统计
-      const summary = {};
-      let total = 0;
-
-      filtered.forEach(r => {
-        total += r.amount;
-        summary[r.category] = (summary[r.category] || 0) + r.amount;
-      });
-
-      console.log("📊 分类统计：");
-      Object.entries(summary).forEach(([cat, sum]) => {
-        console.log(`${cat}: ${sum}`);
-      });
-
-      console.log(`---\n总余额: ${total}`);
-    }
 
   } else {
-    console.log("Usage: node index.js <add|list|delete|report>");
+    console.log("Usage: node index.js <add|list|delete|report|export|import>");
   }
 }
 
